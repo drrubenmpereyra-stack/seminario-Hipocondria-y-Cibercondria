@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Participantes</title>
     
-    <!-- SDKs de Firebase Firestore directos en el iframe -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -24,7 +23,6 @@
 
         window.db = db;
         window.firestoreOperations = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc };
-
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
 
@@ -146,6 +144,7 @@
         th, td {
             padding: 10px 12px;
             border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
         }
 
         th {
@@ -156,6 +155,14 @@
 
         tr:hover {
             background-color: #f8fafc;
+        }
+
+        .avatar-min {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--accent-color);
         }
 
         .actions-cell {
@@ -180,16 +187,6 @@
         .btn-delete {
             background-color: #dc2626;
             color: white;
-        }
-
-        .link-drive {
-            color: var(--accent-color);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .link-drive:hover {
-            text-decoration: underline;
         }
 
         .mensaje-estado {
@@ -234,8 +231,8 @@
             </div>
 
             <div class="form-group full-width">
-                <label for="linkDrive">Link Carpeta Google Drive:</label>
-                <input type="url" id="linkDrive" placeholder="https://drive.google.com/...">
+                <label for="linkDrive">Link Foto / Carpeta Google Drive:</label>
+                <input type="text" id="linkDrive" placeholder="https://drive.google.com/file/d/...">
             </div>
 
             <div class="form-actions">
@@ -249,12 +246,12 @@
             <table>
                 <thead>
                     <tr>
+                        <th>Foto</th>
                         <th>Apellido y Nombre</th>
                         <th>DNI N°</th>
                         <th>Teléfono</th>
                         <th>Profesión</th>
                         <th>Código Mat</th>
-                        <th>Carpeta Drive</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -268,6 +265,16 @@
     </div>
 
     <script>
+        // Función para transformar cualquier link de Drive en imagen visualizable directa
+        function convertirLinkDriveImagen(url) {
+            if (!url) return 'https://placehold.co/36x36?text=Foto';
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                return `https://lh3.googleusercontent.com/d/${match[1]}`;
+            }
+            return url;
+        }
+
         async function cargarParticipantes() {
             const tbody = document.getElementById('tablaParticipantesBody');
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #64748b;">Cargando registros...</td></tr>';
@@ -290,16 +297,16 @@
                 querySnapshot.forEach((docSnap) => {
                     const p = docSnap.data();
                     const id = docSnap.id;
-                    const linkDriveHtml = p.linkDrive ? `<a href="${escapeHtml(p.linkDrive)}" target="_blank" class="link-drive">Abrir Drive</a>` : '<span style="color:#94a3b8;">Sin link</span>';
+                    const fotoSrc = convertirLinkDriveImagen(p.linkDrive);
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
+                        <td><img src="${fotoSrc}" class="avatar-min" onerror="this.src='https://placehold.co/36x36?text=Foto'"></td>
                         <td>${escapeHtml(p.apellidoNombre)}</td>
                         <td>${escapeHtml(p.dni)}</td>
                         <td>${escapeHtml(p.telefono)}</td>
                         <td>${escapeHtml(p.profesion)}</td>
                         <td>${escapeHtml(p.codigoMat)}</td>
-                        <td>${linkDriveHtml}</td>
                         <td class="actions-cell">
                             <button class="btn-sm btn-edit" onclick="prepararEdicion('${id}', '${escapeParam(p.apellidoNombre)}', '${escapeParam(p.dni)}', '${escapeParam(p.telefono)}', '${escapeParam(p.profesion)}', '${escapeParam(p.codigoMat)}', '${escapeParam(p.linkDrive || '')}')">Editar</button>
                             <button class="btn-sm btn-delete" onclick="eliminarParticipante('${id}')">Eliminar</button>
