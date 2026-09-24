@@ -1,3 +1,4 @@
+// Estructura de menús por rol
 const menusPorRol = {
     admin: [
         { id: 'participantes', label: 'Participantes', file: 'participantes.html' },
@@ -52,7 +53,7 @@ function cambiarRol(nuevoRol) {
             mostrarPantallaLoginAdmin();
         } else {
             renderizarMenu();
-            cargarVista('participantes');
+            mostrarAnimacionAdmin();
         }
     } else if (rolActual === 'participante') {
         if (!participanteAutenticado) {
@@ -121,10 +122,64 @@ function verificarLoginAdmin() {
     if (u === 'DRPEREYRA' && p === '235689') {
         adminAutenticado = true;
         renderizarMenu();
-        cargarVista('participantes');
+        mostrarAnimacionAdmin();
     } else {
         mostrarPantallaLoginAdmin('Usuario o contraseña incorrectos.');
     }
+}
+
+// Animación de bienvenida para el Administrador (Dr. y Mgter. Rubén M. Pereyra con 22.jpg)
+function mostrarAnimacionAdmin() {
+    const vista = document.getElementById('dynamicView');
+    if (!vista) return;
+
+    vista.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; animation: fadeInWelcome 1s ease-in-out;">
+            <style>
+                @keyframes fadeInWelcome {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                @keyframes pulseRing {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(43, 76, 111, 0.4); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(43, 76, 111, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(43, 76, 111, 0); }
+                }
+                .welcome-avatar-container {
+                    width: 140px;
+                    height: 140px;
+                    border-radius: 50%;
+                    overflow: hidden;
+                    border: 4px solid var(--primary-color);
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                    margin-bottom: 20px;
+                    animation: pulseRing 2s infinite;
+                    background: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .welcome-avatar-container img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+            </style>
+
+            <div class="welcome-avatar-container">
+                <img src="22.jpg" alt="Dr. y Mgter. Rubén M. Pereyra" onerror="this.src='https://placehold.co/140x140?text=Dr.+Pereyra'">
+            </div>
+
+            <h2 style="color: var(--primary-color); font-size: 1.8rem; margin-bottom: 10px; border: none;">Panel de Administración</h2>
+            <h3 style="color: var(--accent-color); font-size: 1.3rem; margin-bottom: 20px; font-weight: 600;">Dr. y Mgter. Rubén M. Pereyra</h3>
+            
+            <p style="max-width: 600px; color: #475569; font-size: 1rem; line-height: 1.6; margin-bottom: 25px;">
+                Bienvenido al sistema de gestión del Seminario Intensivo: <strong>Hipocondría y Cibercondría: El Terror al Cuerpo Enfermo en la Era de la Información</strong>.
+            </p>
+
+            <button class="login-btn" style="max-width: 280px;" onclick="cargarVista('participantes')">Acceder al Panel de Gestión</button>
+        </div>
+    `;
 }
 
 function mostrarPantallaLoginParticipante(mensajeError = '') {
