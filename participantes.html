@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Participantes</title>
+    <style>
+        :root {
+            --primary-color: #2b4c6f;
+            --accent-color: #0d9488;
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: transparent;
+            color: var(--text-color);
+            padding: 5px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            background: #ffffff;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        .form-group input {
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+        }
+
+        .btn-secondary {
+            background-color: #64748b;
+            color: #fff;
+            display: none;
+        }
+
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        .table-container {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.78rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+        }
+
+        .btn-edit {
+            background-color: #0284c7;
+            color: white;
+        }
+
+        .btn-delete {
+            background-color: #dc2626;
+            color: white;
+        }
+
+        .mensaje-estado {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div>
+        <h2>Gestión e Inscripción de Participantes</h2>
+
+        <form id="formParticipante" class="form-grid" onsubmit="guardarParticipante(event)">
+            <input type="hidden" id="participanteId">
+            
+            <div class="form-group">
+                <label for="apellidoNombre">Apellido y Nombre:</label>
+                <input type="text" id="apellidoNombre" required placeholder="Ej. Pérez, Juan">
+            </div>
+
+            <div class="form-group">
+                <label for="dni">DNI N°:</label>
+                <input type="text" id="dni" required placeholder="Ej. 30123456">
+            </div>
+
+            <div class="form-group">
+                <label for="telefono">Teléfono:</label>
+                <input type="text" id="telefono" required placeholder="Ej. +549351...">
+            </div>
+
+            <div class="form-group">
+                <label for="profesion">Profesión:</label>
+                <input type="text" id="profesion" required placeholder="Ej. Psicólogo">
+            </div>
+
+            <div class="form-group">
+                <label for="codigoMat">Código Mat:</label>
+                <input type="text" id="codigoMat" required placeholder="Ej. MP-1234">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" id="btnGuardar" class="btn btn-primary">Registrar</button>
+                <button type="button" id="btnCancelar" class="btn btn-secondary" onclick="limpiarFormulario()">Cancelar</button>
+            </div>
+            <div id="mensajeEstado" class="mensaje-estado"></div>
+        </form>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Apellido y Nombre</th>
+                        <th>DNI N°</th>
+                        <th>Teléfono</th>
+                        <th>Profesión</th>
+                        <th>Código Mat</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaParticipantesBody">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #64748b;">Cargando participantes...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function cargarParticipantes() {
+            const tbody = document.getElementById('tablaParticipantesBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b;">Cargando registros...</td></tr>';
+
+            try {
+                // Se conecta a la instancia de Firestore heredada desde la ventana principal (parent)
+                const dbRef = window.parent.db;
+                if (!dbRef) {
+                    setTimeout(cargarParticipantes, 500);
+                    return;
+                }
+
+                const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                const querySnapshot = await getDocs(collection(dbRef, "participantes"));
+                
+                tbody.innerHTML = '';
+                if (querySnapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b;">No hay participantes registrados todavía.</td></tr>';
+                    return;
+                }
+
+                querySnapshot.forEach((docSnap) => {
+                    const p = docSnap.data();
+                    const id = docSnap.id;
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(p.apellidoNombre)}</td>
+                        <td>${escapeHtml(p.dni)}</td>
+                        <td>${escapeHtml(p.telefono)}</td>
+                        <td>${escapeHtml(p.profesion)}</td>
+                        <td>${escapeHtml(p.codigoMat)}</td>
+                        <td class="actions-cell">
+                            <button class="btn-sm btn-edit" onclick="prepararEdicion('${id}', '${escapeParam(p.apellidoNombre)}', '${escapeParam(p.dni)}', '${escapeParam(p.telefono)}', '${escapeParam(p.profesion)}', '${escapeParam(p.codigoMat)}')">Editar</button>
+                            <button class="btn-sm btn-delete" onclick="eliminarParticipante('${id}')">Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error("Error al cargar participantes:", e);
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #dc2626;">Error al conectar con la base de datos.</td></tr>';
+            }
+        }
+
+        async function guardarParticipante(event) {
+            event.preventDefault();
+            const id = document.getElementById('participanteId').value;
+            const apellidoNombre = document.getElementById('apellidoNombre').value.trim();
+            const dni = document.getElementById('dni').value.trim();
+            const telefono = document.getElementById('telefono').value.trim();
+            const profesion = document.getElementById('profesion').value.trim();
+            const codigoMat = document.getElementById('codigoMat').value.trim();
+            const mensaje = document.getElementById('mensajeEstado');
+
+            const datosParticipante = { apellidoNombre, dni, telefono, profesion, codigoMat };
+
+            try {
+                const dbRef = window.parent.db;
+                const { collection, addDoc, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+
+                if (id) {
+                    await updateDoc(doc(dbRef, "participantes", id), datosParticipante);
+                    mensaje.innerText = "¡Participante actualizado correctamente!";
+                } else {
+                    await addDoc(collection(dbRef, "participantes"), datosParticipante);
+                    mensaje.innerText = "¡Participante registrado exitosamente!";
+                }
+
+                limpiarFormulario();
+                cargarParticipantes();
+                setTimeout(() => mensaje.innerText = "", 3000);
+            } catch (e) {
+                console.error("Error al guardar:", e);
+                alert("Ocurrió un error al guardar los datos.");
+            }
+        }
+
+        function prepararEdicion(id, apellidoNombre, dni, telefono, profesion, codigoMat) {
+            document.getElementById('participanteId').value = id;
+            document.getElementById('apellidoNombre').value = apellidoNombre;
+            document.getElementById('dni').value = dni;
+            document.getElementById('telefono').value = telefono;
+            document.getElementById('profesion').value = profesion;
+            document.getElementById('codigoMat').value = codigoMat;
+
+            document.getElementById('btnGuardar').innerText = "Actualizar";
+            document.getElementById('btnCancelar').style.display = "inline-block";
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('formParticipante').reset();
+            document.getElementById('participanteId').value = "";
+            document.getElementById('btnGuardar').innerText = "Registrar";
+            document.getElementById('btnCancelar').style.display = "none";
+        }
+
+        async function eliminarParticipante(id) {
+            if (confirm("¿Está seguro de eliminar este registro de participantes?")) {
+                try {
+                    const dbRef = window.parent.db;
+                    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    await deleteDoc(doc(dbRef, "participantes", id));
+                    cargarParticipantes();
+                } catch (e) {
+                    console.error("Error al eliminar:", e);
+                    alert("No se pudo eliminar el registro.");
+                }
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function escapeParam(text) {
+            if (!text) return '';
+            return text.replace(/'/g, "\\'");
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            cargarParticipantes();
+        });
+
+        window.prepararEdicion = prepararEdicion;
+        window.eliminarParticipante = eliminarParticipante;
+        window.guardarParticipante = guardarParticipante;
+        window.limpiarFormulario = limpiarFormulario;
+    </script>
+</body>
+</html>
