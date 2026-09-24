@@ -1,4 +1,4 @@
-// Estructura de menús por rol con sus respectivos archivos HTML mapeados
+// Estructura de menús por rol
 const menusPorRol = {
     admin: [
         { id: 'participantes', label: 'Participantes', file: 'participantes.html' },
@@ -10,18 +10,17 @@ const menusPorRol = {
         { id: 'pagos', label: 'Pagos', file: 'pagos.html' }
     ],
     participante: [
-        { id: 'materiales', label: 'Materiales, biblioteca', file: 'est_materiales.html' },
-        { id: 'clase-en-vivo', label: 'Clase en vivo', file: 'est_meet.html' },
-        { id: 'clase-grabada', label: 'Clase Grabada', file: 'est_drive.html' },
+        { id: 'est_materiales', label: 'Materiales, biblioteca', file: 'est_materiales.html' },
+        { id: 'est_clase-en-vivo', label: 'Clase en vivo', file: 'est_meet.html' },
+        { id: 'est_clase-grabada', label: 'Clase Grabada', file: 'est_drive.html' },
         { id: 'evaluacion', label: 'Trabajo de evaluación', file: 'est_acreditacion.html' },
-        { id: 'certificado', label: 'Certificado', file: 'est_cert.html' },
-        { id: 'pagos', label: 'Pagos', file: 'est_pagos.html' }
+        { id: 'est_certificado', label: 'Certificado', file: 'est_cert.html' },
+        { id: 'est_pagos', label: 'Pagos', file: 'est_pagos.html' }
     ]
 };
 
-// Diccionario general con la asignación de iframes para cada vista
+// Mapeo de vistas e iframes
 const contenidosPaginas = {
-    // Nivel Administrador
     'participantes': { isIframe: true, url: 'participantes.html' },
     'materiales': { isIframe: true, url: 'mat_bib.html' },
     'clase-en-vivo': { isIframe: true, url: 'clase_meet.html' },
@@ -30,7 +29,6 @@ const contenidosPaginas = {
     'certificado': { isIframe: true, url: 'certificado.html' },
     'pagos': { isIframe: true, url: 'pagos.html' },
 
-    // Nivel Participante
     'est_materiales': { isIframe: true, url: 'est_materiales.html' },
     'est_clase-en-vivo': { isIframe: true, url: 'est_meet.html' },
     'est_clase-grabada': { isIframe: true, url: 'est_drive.html' },
@@ -41,22 +39,35 @@ const contenidosPaginas = {
 
 let rolActual = 'admin';
 let adminAutenticado = false;
+let participanteAutenticado = false;
+let participanteActualNombre = '';
 
 function cambiarRol(nuevoRol) {
     rolActual = nuevoRol;
-    if (rolActual === 'admin' && !adminAutenticado) {
-        renderizarMenuVacio();
-        mostrarPantallaLogin();
-    } else {
-        renderizarMenu();
-        cargarVista(menusPorRol[rolActual][0].id);
+    
+    if (rolActual === 'admin') {
+        if (!adminAutenticado) {
+            renderizarMenuVacio('Acceso restringido: Ingrese credenciales de Administrador.');
+            mostrarPantallaLoginAdmin();
+        } else {
+            renderizarMenu();
+            cargarVista('participantes');
+        }
+    } else if (rolActual === 'participante') {
+        if (!participanteAutenticado) {
+            renderizarMenuVacio('Acceso restringido: Ingrese su Apellido y Código de Matrícula.');
+            mostrarPantallaLoginParticipante();
+        } else {
+            renderizarMenu();
+            cargarVista('est_materiales');
+        }
     }
 }
 
-function renderizarMenuVacio() {
+function renderizarMenuVacio(mensaje) {
     const navMenu = document.getElementById('navMenu');
     if (navMenu) {
-        navMenu.innerHTML = '<span style="font-size: 0.85rem; color: #475569; font-style: italic;">Acceso restringido: Ingrese credenciales de Administrador.</span>';
+        navMenu.innerHTML = `<span style="font-size: 0.85rem; color: #475569; font-style: italic;">${mensaje}</span>`;
     }
 }
 
@@ -79,7 +90,8 @@ function renderizarMenu() {
     });
 }
 
-function mostrarPantallaLogin(mensajeError = '') {
+// Pantalla Login Administrador
+function mostrarPantallaLoginAdmin(mensajeError = '') {
     const vista = document.getElementById('dynamicView');
     if (!vista) return;
     vista.innerHTML = `
@@ -94,15 +106,14 @@ function mostrarPantallaLogin(mensajeError = '') {
                 <label>Contraseña:</label>
                 <input type="password" id="passwordLogin" value="235689">
             </div>
-            <button class="login-btn" id="btnIngresarLogin">Ingresar</button>
+            <button class="login-btn" id="btnIngresarAdmin">Ingresar como Administrador</button>
             ${mensajeError ? `<div class="login-error">${mensajeError}</div>` : ''}
         </div>
     `;
-    const btnIngresar = document.getElementById('btnIngresarLogin');
-    if (btnIngresar) btnIngresar.onclick = verificarLogin;
+    document.getElementById('btnIngresarAdmin').onclick = verificarLoginAdmin;
 }
 
-function verificarLogin() {
+function verificarLoginAdmin() {
     const u = document.getElementById('usuarioLogin').value.trim();
     const p = document.getElementById('passwordLogin').value.trim();
 
@@ -110,18 +121,92 @@ function verificarLogin() {
         adminAutenticado = true;
         renderizarMenu();
         cargarVista('participantes');
-        registrarAccesoFirestore(u);
+        registrarAccesoFirestore(u, "admin");
     } else {
-        mostrarPantallaLogin('Usuario o contraseña incorrectos.');
+        mostrarPantallaLoginAdmin('Usuario o contraseña incorrectos.');
     }
 }
 
-async function registrarAccesoFirestore(usuario) {
+// Pantalla Login Participante (Valida contra Firestore)
+function mostrarPantallaLoginParticipante(mensajeError = '') {
+    const vista = document.getElementById('dynamicView');
+    if (!vista) return;
+    vista.innerHTML = `
+        <div class="login-box">
+            <h2>Acceso Nivel Participante</h2>
+            <p>Ingrese su Apellido y Código de Matrícula:</p>
+            <div class="form-group">
+                <label>Usuario (Apellido):</label>
+                <input type="text" id="partUsuario" placeholder="Ej. Pérez" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Contraseña (Código Mat):</label>
+                <input type="password" id="partPassword" placeholder="Ej. MP-1234">
+            </div>
+            <button class="login-btn" id="btnIngresarPart">Ingresar al Seminario</button>
+            ${mensajeError ? `<div class="login-error">${mensajeError}</div>` : ''}
+        </div>
+    `;
+    document.getElementById('btnIngresarPart').onclick = verificarLoginParticipante;
+}
+
+async function verificarLoginParticipante() {
+    const apellidoIngresado = document.getElementById('partUsuario').value.trim().toLowerCase();
+    const codigoIngresado = document.getElementById('partPassword').value.trim();
+
+    if (!apellidoIngresado || !codigoIngresado) {
+        mostrarPantallaLoginParticipante('Por favor complete ambos campos.');
+        return;
+    }
+
+    const btn = document.getElementById('btnIngresarPart');
+    btn.innerText = "Verificando en base de datos...";
+    btn.disabled = true;
+
+    try {
+        if (!window.db || !window.firebaseFirestore) {
+            throw new Error("Base de datos no inicializada.");
+        }
+
+        const { collection, getDocs } = window.firebaseFirestore;
+        const querySnapshot = await getDocs(collection(window.db, "participantes"));
+        
+        let participanteEncontrado = false;
+
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const apellidoRegistro = (data.apellidoNombre || '').toLowerCase();
+            const codigoRegistro = (data.codigoMat || '').trim();
+
+            // Verificamos si el apellido ingresado coincide con el inicio o parte del campo Apellido y Nombre
+            // y si la contraseña coincide exactamente con el código de matrícula registrado
+            if (apellidoRegistro.includes(apellidoIngresado) && codigoRegistro === codigoIngresado) {
+                participanteEncontrado = true;
+                participanteActualNombre = data.apellidoNombre;
+            }
+        });
+
+        if (participanteEncontrado) {
+            participanteAutenticado = true;
+            renderizarMenu();
+            cargarVista('est_materiales');
+            registrarAccesoFirestore(participanteActualNombre, "participante");
+        } else {
+            mostrarPantallaLoginParticipante('Apellido o Código de Matrícula incorrectos o no registrados.');
+        }
+    } catch (e) {
+        console.error("Error en validación de participante:", e);
+        mostrarPantallaLoginParticipante('Error al conectar con la base de datos. Intente nuevamente.');
+    }
+}
+
+async function registrarAccesoFirestore(usuario, tipo) {
     try {
         if (window.db && window.firebaseFirestore) {
             const { collection, addDoc } = window.firebaseFirestore;
-            await addDoc(collection(window.db, "accesos_admin"), {
+            await addDoc(collection(window.db, "accesos"), {
                 usuario: usuario,
+                rol: tipo,
                 fecha: new Date().toISOString(),
                 seminario: "Hipocondría y Cibercondría"
             });
@@ -133,18 +218,20 @@ async function registrarAccesoFirestore(usuario) {
 
 function cargarVista(idVista) {
     if (rolActual === 'admin' && !adminAutenticado) {
-        mostrarPantallaLogin();
+        mostrarPantallaLoginAdmin();
+        return;
+    }
+    if (rolActual === 'participante' && !participanteAutenticado) {
+        mostrarPantallaLoginParticipante();
         return;
     }
     
     const vista = document.getElementById('dynamicView');
     if (!vista) return;
 
-    // Buscar en el mapeo general o asociar el archivo correspondiente del menú activo
     let configVista = contenidosPaginas[idVista];
     
     if (!configVista) {
-        // Fallback dinámico buscando en el menú actual si el ID coincide con el archivo
         const itemMenu = menusPorRol[rolActual].find(m => m.id === idVista);
         if (itemMenu) {
             configVista = { isIframe: true, url: itemMenu.file };
@@ -163,17 +250,19 @@ function cargarVista(idVista) {
     }
 }
 
-// Exponer funciones globales necesarias para eventos nativos
+// Exponer funciones globales
 window.cambiarRol = cambiarRol;
-window.verificarLogin = verificarLogin;
+window.verificarLoginAdmin = verificarLoginAdmin;
+window.verificarLoginParticipante = verificarLoginParticipante;
 
 document.addEventListener('DOMContentLoaded', () => {
     adminAutenticado = false;
+    participanteAutenticado = false;
     const selector = document.getElementById('roleSelector');
     if (selector) {
         selector.value = 'admin';
         selector.onchange = (e) => cambiarRol(e.target.value);
     }
-    renderizarMenuVacio();
-    mostrarPantallaLogin();
+    renderizarMenuVacio('Acceso restringido: Ingrese credenciales de Administrador.');
+    mostrarPantallaLoginAdmin();
 });
