@@ -41,6 +41,10 @@ let rolActual = 'admin';
 let adminAutenticado = false;
 let participanteAutenticado = false;
 let participanteActualNombre = '';
+let participanteActualDrive = '';
+
+// Enlace de respaldo solicitado
+const FOTO_DEFAULT_DRIVE = "https://drive.google.com/file/d/1_ZF3FTDBH5E33hkWt_4dEWkAIcGe9S_q/view?usp=sharing";
 
 function cambiarRol(nuevoRol) {
     rolActual = nuevoRol;
@@ -59,7 +63,7 @@ function cambiarRol(nuevoRol) {
             mostrarPantallaLoginParticipante();
         } else {
             renderizarMenu();
-            cargarVista('est_materiales');
+            mostrarAnimacionBienvenida();
         }
     }
 }
@@ -127,7 +131,7 @@ function verificarLoginAdmin() {
     }
 }
 
-// Pantalla Login Participante (Valida contra Firestore)
+// Pantalla Login Participante
 function mostrarPantallaLoginParticipante(mensajeError = '') {
     const vista = document.getElementById('dynamicView');
     if (!vista) return;
@@ -178,18 +182,17 @@ async function verificarLoginParticipante() {
             const apellidoRegistro = (data.apellidoNombre || '').toLowerCase();
             const codigoRegistro = (data.codigoMat || '').trim();
 
-            // Verificamos si el apellido ingresado coincide con el inicio o parte del campo Apellido y Nombre
-            // y si la contraseña coincide exactamente con el código de matrícula registrado
             if (apellidoRegistro.includes(apellidoIngresado) && codigoRegistro === codigoIngresado) {
                 participanteEncontrado = true;
                 participanteActualNombre = data.apellidoNombre;
+                participanteActualDrive = data.linkDrive && data.linkDrive.trim() !== "" ? data.linkDrive : FOTO_DEFAULT_DRIVE;
             }
         });
 
         if (participanteEncontrado) {
             participanteAutenticado = true;
             renderizarMenu();
-            cargarVista('est_materiales');
+            mostrarAnimacionBienvenida();
             registrarAccesoFirestore(participanteActualNombre, "participante");
         } else {
             mostrarPantallaLoginParticipante('Apellido o Código de Matrícula incorrectos o no registrados.');
@@ -198,6 +201,73 @@ async function verificarLoginParticipante() {
         console.error("Error en validación de participante:", e);
         mostrarPantallaLoginParticipante('Error al conectar con la base de datos. Intente nuevamente.');
     }
+}
+
+// Transformar link de Google Drive a formato de visualización incrustable/imagen
+function convertirLinkDrive(url) {
+    if (!url) return '';
+    // Si es un link de archivo de drive, convertir a formato embed/preview o exportar imagen
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+        return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+    return url;
+}
+
+// Animación vectorial de bienvenida corporativa/clínica
+function mostrarAnimacionBienvenida() {
+    const vista = document.getElementById('dynamicView');
+    if (!vista) return;
+
+    const fotoUrl = convertirLinkDrive(participanteActualDrive);
+
+    vista.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; animation: fadeInWelcome 1s ease-in-out;">
+            <style>
+                @keyframes fadeInWelcome {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                @keyframes pulseRing {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.4); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(13, 148, 136, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
+                }
+                .welcome-avatar-container {
+                    width: 130px;
+                    height: 130px;
+                    border-radius: 50%;
+                    overflow: hidden;
+                    border: 4px solid var(--accent-color);
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                    margin-bottom: 20px;
+                    animation: pulseRing 2s infinite;
+                    background: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .welcome-avatar-container img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+            </style>
+
+            <div class="welcome-avatar-container">
+                <img src="${fotoUrl}" alt="Foto Participante" onerror="this.src='https://placehold.co/130x130?text=Participante'">
+            </div>
+
+            <h2 style="color: var(--primary-color); font-size: 1.8rem; margin-bottom: 10px; border: none;">¡Bienvenido/a al Seminario!</h2>
+            <h3 style="color: var(--accent-color); font-size: 1.3rem; margin-bottom: 20px; font-weight: 600;">${participanteActualNombre}</h3>
+            
+            <p style="max-width: 600px; color: #475569; font-size: 1rem; line-height: 1.6; margin-bottom: 25px;">
+                Nos alegra contar con su participación en <strong>Hipocondría y Cibercondría: El Terror al Cuerpo Enfermo en la Era de la Información</strong>, dirigido por el Dr. y Mgter. Rubén M. Pereyra.
+            </p>
+
+            <button class="login-btn" style="max-width: 250px;" onclick="cargarVista('est_materiales')">Acceder al Aula Virtual</button>
+        </div>
+    `;
 }
 
 async function registrarAccesoFirestore(usuario, tipo) {
@@ -254,6 +324,7 @@ function cargarVista(idVista) {
 window.cambiarRol = cambiarRol;
 window.verificarLoginAdmin = verificarLoginAdmin;
 window.verificarLoginParticipante = verificarLoginParticipante;
+window.cargarVista = cargarVista;
 
 document.addEventListener('DOMContentLoaded', () => {
     adminAutenticado = false;
