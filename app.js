@@ -1,156 +1,291 @@
-// Estructura de menús por rol
-const menusPorRol = {
-    admin: [
-        { id: 'participantes', label: 'Participantes' },
-        { id: 'materiales', label: 'Materiales, biblioteca' },
-        { id: 'clase-en-vivo', label: 'Clase en vivo' },
-        { id: 'clase-grabada', label: 'Clase Grabada' },
-        { id: 'acreditacion', label: 'Trabajo para acreditación' },
-        { id: 'certificado', label: 'Certificado' },
-        { id: 'pagos', label: 'Pagos' }
-    ],
-    participante: [
-        { id: 'materiales', label: 'Materiales, biblioteca' },
-        { id: 'clase-en-vivo', label: 'Clase en vivo' },
-        { id: 'clase-grabada', label: 'Clase Grabada' },
-        { id: 'evaluacion', label: 'Trabajo Evaluación' },
-        { id: 'certificado', label: 'Certificado' },
-        { id: 'pagos', label: 'Pagos' }
-    ]
-};
-
-const contenidosPaginas = {
-    'participantes': {
-        titulo: 'Gestión de Participantes (Nivel Administrador)',
-        descripcion: 'Panel de control administrativo para la supervisión, alta, baja y seguimiento de los inscriptos al Seminario Intensivo sobre Hipocondría y Cibercondría.'
-    },
-    'materiales': {
-        titulo: 'Materiales y Biblioteca Digital',
-        descripcion: 'Repositorio bibliográfico institucional. Acceso a textos fundamentales sobre nosografías contemporáneas, impacto de internet en la salud mental y viñetas clínicas de la Cibercondría.'
-    },
-    'clase-en-vivo': {
-        titulo: 'Transmisión de Clase en Vivo',
-        descripcion: 'Enlace de acceso a las videoconferencias sincrónicas dictadas por el Dr. y Mgter. Rubén M. Pereyra en el marco de la Clínica de la Convergencia.'
-    },
-    'clase-grabada': {
-        titulo: 'Archivos de Clases Grabadas',
-        descripcion: 'Videoteca con el registro histórico de las conferencias anteriores para visualización asincrónica y repaso de los ejes teóricos del seminario.'
-    },
-    'acreditacion': {
-        titulo: 'Trabajos para Acreditación (Administrador)',
-        descripcion: 'Gestión, revisión y calificación de los trabajos finales presentados por los cursantes para la acreditación formal del seminario.'
-    },
-    'evaluacion': {
-        titulo: 'Trabajo de Evaluación (Participante)',
-        descripcion: 'Espacio para la presentación y entrega del trabajo práctico evaluativo exigido para la aprobación del Seminario Intensivo.'
-    },
-    'certificado': {
-        titulo: 'Emisión y Descarga de Certificados',
-        descripcion: 'Generación del certificado oficial avalado por la Clínica de la Convergencia tras cumplir con los requisitos académicos de asistencia y evaluación.'
-    },
-    'pagos': {
-        titulo: 'Estado de Pagos y Tesorería',
-        descripcion: 'Control y registro de cuotas, aranceles y estado financiero correspondientes a la matriculación y cursada del seminario.'
-    }
-};
-
-let rolActual = 'admin';
-let adminAutenticado = false; // Estado de sesión del administrador
-
-function cambiarRol(nuevoRol) {
-    rolActual = nuevoRol;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seminario Intensivo: Hipocondría y Cibercondría - Dr. y Mgter. Rubén M. Pereyra</title>
     
-    if (rolActual === 'admin' && !adminAutenticado) {
-        renderizarMenuVacio();
-        mostrarPantallaLogin();
-    } else {
-        renderizarMenu();
-        const primerOpcion = menusPorRol[rolActual][0].id;
-        cargarVista(primerOpcion);
-    }
-}
-
-function renderizarMenuVacio() {
-    const navMenu = document.getElementById('navMenu');
-    navMenu.innerHTML = '<span style="font-size: 0.85rem; color: #475569; font-style: italic; padding: 6px 0;">Acceso restringido: Ingrese credenciales de Administrador para habilitar el menú.</span>';
-}
-
-function renderizarMenu() {
-    const navMenu = document.getElementById('navMenu');
-    navMenu.innerHTML = '';
-    
-    menusPorRol[rolActual].forEach((item, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'nav-btn';
-        if (index === 0) btn.classList.add('active');
-        btn.innerText = item.label;
-        btn.onclick = () => {
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            cargarVista(item.id);
+    <!-- SDKs de Firebase (Firestore y App) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3LUUjZ4ONqw-Hk9862YhaE-d2CvT3lC0",
+            authDomain: "seminario-hipocondria.firebaseapp.com",
+            projectId: "seminario-hipocondria",
+            storageBucket: "seminario-hipocondria.firebasestorage.app",
+            messagingSenderId: "144661958251",
+            appId: "1:144661958251:web:a78acdd2546f09fde96b2e"
         };
-        navMenu.appendChild(btn);
-    });
-}
 
-function mostrarPantallaLogin(mensajeError = '') {
-    const contenedor = document.getElementById('dynamicView');
-    contenedor.innerHTML = `
-        <div class="login-box">
-            <h2>Acceso Nivel Administrador</h2>
-            <p>Ingrese sus credenciales institucionales para acceder al panel de gestión del Dr. y Mgter. Rubén M. Pereyra.</p>
-            <div class="form-group">
-                <label for="usuarioLogin">Usuario:</label>
-                <input type="text" id="usuarioLogin" placeholder="Ej. DRPEREYRA" autocomplete="off">
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Exponer la base de datos y funciones a la ventana para app.js
+        window.db = db;
+        window.firebaseFirestore = { collection, addDoc, getDocs, doc, setDoc };
+    </script>
+
+    <style>
+        :root {
+            --bg-pastel-1: #eef2f7;
+            --bg-pastel-2: #e2e8f0;
+            --primary-color: #2b4c6f;
+            --accent-color: #0d9488;
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+            --card-bg: rgba(255, 255, 255, 0.92);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-pastel-1);
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(13, 148, 136, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(43, 76, 111, 0.08) 0%, transparent 40%),
+                linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .role-switcher-bar {
+            background-color: #1e293b;
+            color: #fff;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .role-switcher-bar select {
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: none;
+            background: #334155;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        header.seminar-header {
+            background: var(--card-bg);
+            border-bottom: 2px solid var(--border-color);
+            padding: 15px 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid var(--accent-color);
+            background-color: #fff;
+        }
+
+        .header-titles h1 {
+            font-size: 1.35rem;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .header-titles h2 {
+            font-size: 1rem;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .header-titles h3 {
+            font-size: 0.85rem;
+            color: var(--accent-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .nav-buttons-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+            min-height: 45px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background-color: #ffffff;
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--accent-color);
+            color: #ffffff;
+            border-color: var(--accent-color);
+        }
+
+        .nav-btn.active {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            border-color: var(--primary-color);
+        }
+
+        main.content-container {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 25px auto;
+            padding: 0 20px;
+        }
+
+        .view-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+
+        .view-panel h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--bg-pastel-2);
+            padding-bottom: 8px;
+        }
+
+        .view-panel p {
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .login-box {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            background: #fff;
+        }
+
+        .login-btn {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .login-btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        .login-error {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        footer.seminar-footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.8rem;
+            color: #64748b;
+            border-top: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="role-switcher-bar">
+        <span>Seleccionar Nivel de Usuario:</span>
+        <select id="roleSelector" onchange="cambiarRol(this.value)">
+            <option value="admin">A- Nivel Administrador</option>
+            <option value="participante">B- Nivel Participante</option>
+        </select>
+    </div>
+
+    <header class="seminar-header">
+        <div class="header-top">
+            <img src="logotipo.jpg" alt="Logotipo Clínica de la Convergencia" class="header-logo" onerror="this.src='https://placehold.co/80x80?text=LOGO'">
+            <div class="header-titles">
+                <h1>Seminario Intensivo: Hipocondría y Cibercondría: El Terror al Cuerpo Enfermo en la Era de la Información</h1>
+                <h2>Dr. y Mgter. Rubén M. Pereyra</h2>
+                <h3>Clínica de la Convergencia</h3>
             </div>
-            <div class="form-group">
-                <label for="passwordLogin">Contraseña:</label>
-                <input type="password" id="passwordLogin" placeholder="••••••">
-            </div>
-            <button class="login-btn" onclick="verificarLogin()">Ingresar</button>
-            ${mensajeError ? `<div class="login-error">${mensajeError}</div>` : ''}
         </div>
-    `;
-}
 
-function verificarLogin() {
-    const usuarioIngresado = document.getElementById('usuarioLogin').value.trim();
-    const passwordIngresado = document.getElementById('passwordLogin').value.trim();
+        <nav class="nav-buttons-container" id="navMenu">
+            <!-- Menú dinámico -->
+        </nav>
+    </header>
 
-    // Credenciales requeridas
-    if (usuarioIngresado === 'DRPEREYRA' && passwordIngresado === '235689') {
-        adminAutenticado = true;
-        renderizarMenu();
-        cargarVista(menusPorRol['admin'][0].id);
-    } else {
-        mostrarPantallaLogin('Usuario o contraseña incorrectos. Verifique sus datos.');
-    }
-}
+    <main class="content-container">
+        <div id="dynamicView" class="view-panel"></div>
+    </main>
 
-function cargarVista(idVista) {
-    if (rolActual === 'admin' && !adminAutenticado) {
-        mostrarPantallaLogin();
-        return;
-    }
+    <footer class="seminar-footer">
+        Clínica de la Convergencia &copy; 2026 - Todos los derechos reservados
+    </footer>
 
-    const contenedor = document.getElementById('dynamicView');
-    const contenido = contenidosPaginas[idVista] || {
-        titulo: 'Sección en desarrollo',
-        descripcion: 'Contenido disponible próximamente en el aula virtual.'
-    };
-
-    contenedor.innerHTML = `
-        <h2>${contenido.titulo}</h2>
-        <p>${contenido.descripcion}</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-        <p style="font-size: 0.9rem; color: #64748b;">Seminario Intensivo: Hipocondría y Cibercondría: El Terror al Cuerpo Enfermo en la Era de la Información | Dr. y Mgter. Rubén M. Pereyra.</p>
-    `;
-}
-
-// Inicialización automática al cargar el DOM
-document.addEventListener('DOMContentLoaded', () => {
-    adminAutenticado = false;
-    document.getElementById('roleSelector').value = 'admin';
-    renderizarMenuVacio();
-    mostrarPantallaLogin();
-});
+    <!-- Script de lógica enlazado -->
+    <script src="app.js"></script>
+</body>
+</html>
