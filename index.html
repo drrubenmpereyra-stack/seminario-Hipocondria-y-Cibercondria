@@ -4,6 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seminario Intensivo: Hipocondría y Cibercondría - Dr. y Mgter. Rubén M. Pereyra</title>
+    
+    <!-- SDKs de Firebase (Firestore y App) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyB3LUUjZ4ONqw-Hk9862YhaE-d2CvT3lC0",
+            authDomain: "seminario-hipocondria.firebaseapp.com",
+            projectId: "seminario-hipocondria",
+            storageBucket: "seminario-hipocondria.firebasestorage.app",
+            messagingSenderId: "144661958251",
+            appId: "1:144661958251:web:a78acdd2546f09fde96b2e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Exponer la base de datos y funciones a la ventana para app.js
+        window.db = db;
+        window.firebaseFirestore = { collection, addDoc, getDocs, doc, setDoc };
+    </script>
+
     <style>
         :root {
             --bg-pastel-1: #eef2f7;
@@ -12,7 +35,7 @@
             --accent-color: #0d9488;
             --text-color: #1e293b;
             --border-color: #cbd5e1;
-            --card-bg: rgba(255, 255, 255, 0.88);
+            --card-bg: rgba(255, 255, 255, 0.92);
         }
 
         * {
@@ -22,7 +45,6 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* Fondo temático: Simbolismo de tecnología/medicina sutil en tonos pastel */
         body {
             background-color: var(--bg-pastel-1);
             background-image: 
@@ -35,7 +57,6 @@
             flex-direction: column;
         }
 
-        /* Selector superior de rol */
         .role-switcher-bar {
             background-color: #1e293b;
             color: #fff;
@@ -57,10 +78,8 @@
             cursor: pointer;
         }
 
-        /* Encabezado Superior Obligatorio */
         header.seminar-header {
             background: var(--card-bg);
-            backdrop-filter: blur(8px);
             border-bottom: 2px solid var(--border-color);
             padding: 15px 30px;
             display: flex;
@@ -107,13 +126,14 @@
             margin-top: 2px;
         }
 
-        /* Menú de botones en el borde del encabezado */
         .nav-buttons-container {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             border-top: 1px solid var(--border-color);
             padding-top: 12px;
+            min-height: 45px;
+            align-items: center;
         }
 
         .nav-btn {
@@ -126,14 +146,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
 
         .nav-btn:hover {
             background-color: var(--accent-color);
             color: #ffffff;
             border-color: var(--accent-color);
-            transform: translateY(-1px);
         }
 
         .nav-btn.active {
@@ -142,7 +160,6 @@
             border-color: var(--primary-color);
         }
 
-        /* Contenedor principal de contenido dinámico */
         main.content-container {
             flex: 1;
             max-width: 1200px;
@@ -153,7 +170,6 @@
 
         .view-panel {
             background: var(--card-bg);
-            backdrop-filter: blur(8px);
             border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 30px;
@@ -174,7 +190,6 @@
             margin-bottom: 15px;
         }
 
-        /* Estilos de la Pantalla de Login */
         .login-box {
             max-width: 400px;
             margin: 0 auto;
@@ -239,7 +254,6 @@
 </head>
 <body>
 
-    <!-- Barra de selección de roles -->
     <div class="role-switcher-bar">
         <span>Seleccionar Nivel de Usuario:</span>
         <select id="roleSelector" onchange="cambiarRol(this.value)">
@@ -248,10 +262,8 @@
         </select>
     </div>
 
-    <!-- Encabezado Superior Obligatorio -->
     <header class="seminar-header">
         <div class="header-top">
-            <!-- La imagen del logo contenida en el mismo repositorio -->
             <img src="logotipo.jpg" alt="Logotipo Clínica de la Convergencia" class="header-logo" onerror="this.src='https://placehold.co/80x80?text=LOGO'">
             <div class="header-titles">
                 <h1>Seminario Intensivo: Hipocondría y Cibercondría: El Terror al Cuerpo Enfermo en la Era de la Información</h1>
@@ -260,25 +272,20 @@
             </div>
         </div>
 
-        <!-- Menú de botones dinámico según rol y autenticación -->
         <nav class="nav-buttons-container" id="navMenu">
-            <!-- Los botones se generan dinámicamente desde app.js -->
+            <!-- Menú dinámico -->
         </nav>
     </header>
 
-    <!-- Contenido Dinámico de las páginas -->
     <main class="content-container">
-        <div id="dynamicView" class="view-panel">
-            <!-- El contenido cambia dinámicamente según la opción seleccionada o login -->
-        </div>
+        <div id="dynamicView" class="view-panel"></div>
     </main>
 
-    <!-- Pie de página institucional -->
     <footer class="seminar-footer">
         Clínica de la Convergencia &copy; 2026 - Todos los derechos reservados
     </footer>
 
-    <!-- Script de lógica separado -->
+    <!-- Script de lógica enlazado -->
     <script src="app.js"></script>
 </body>
 </html>
