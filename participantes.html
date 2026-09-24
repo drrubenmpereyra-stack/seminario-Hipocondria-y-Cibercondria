@@ -22,11 +22,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Exponer la base de datos y métodos globalmente dentro de este iframe
         window.db = db;
         window.firestoreOperations = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc };
 
-        // Disparar la carga inicial una vez conectado
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
 
@@ -74,6 +72,10 @@
         .form-group {
             display: flex;
             flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
         }
 
         .form-group label {
@@ -180,6 +182,16 @@
             color: white;
         }
 
+        .link-drive {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .link-drive:hover {
+            text-decoration: underline;
+        }
+
         .mensaje-estado {
             margin-top: 8px;
             font-size: 0.85rem;
@@ -221,6 +233,11 @@
                 <input type="text" id="codigoMat" required placeholder="Ej. MP-1234">
             </div>
 
+            <div class="form-group full-width">
+                <label for="linkDrive">Link Carpeta Google Drive:</label>
+                <input type="url" id="linkDrive" placeholder="https://drive.google.com/...">
+            </div>
+
             <div class="form-actions">
                 <button type="submit" id="btnGuardar" class="btn btn-primary">Registrar</button>
                 <button type="button" id="btnCancelar" class="btn btn-secondary" onclick="limpiarFormulario()">Cancelar</button>
@@ -237,12 +254,13 @@
                         <th>Teléfono</th>
                         <th>Profesión</th>
                         <th>Código Mat</th>
+                        <th>Carpeta Drive</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tablaParticipantesBody">
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #64748b;">Cargando participantes...</td>
+                        <td colspan="7" style="text-align: center; color: #64748b;">Cargando participantes...</td>
                     </tr>
                 </tbody>
             </table>
@@ -252,10 +270,9 @@
     <script>
         async function cargarParticipantes() {
             const tbody = document.getElementById('tablaParticipantesBody');
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b;">Cargando registros...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #64748b;">Cargando registros...</td></tr>';
 
             try {
-                // Esperar a que window.db esté disponible
                 if (!window.db || !window.firestoreOperations) {
                     setTimeout(cargarParticipantes, 300);
                     return;
@@ -266,13 +283,14 @@
                 
                 tbody.innerHTML = '';
                 if (querySnapshot.empty) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #64748b;">No hay participantes registrados todavía.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #64748b;">No hay participantes registrados todavía.</td></tr>';
                     return;
                 }
 
                 querySnapshot.forEach((docSnap) => {
                     const p = docSnap.data();
                     const id = docSnap.id;
+                    const linkDriveHtml = p.linkDrive ? `<a href="${escapeHtml(p.linkDrive)}" target="_blank" class="link-drive">Abrir Drive</a>` : '<span style="color:#94a3b8;">Sin link</span>';
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
@@ -281,8 +299,9 @@
                         <td>${escapeHtml(p.telefono)}</td>
                         <td>${escapeHtml(p.profesion)}</td>
                         <td>${escapeHtml(p.codigoMat)}</td>
+                        <td>${linkDriveHtml}</td>
                         <td class="actions-cell">
-                            <button class="btn-sm btn-edit" onclick="prepararEdicion('${id}', '${escapeParam(p.apellidoNombre)}', '${escapeParam(p.dni)}', '${escapeParam(p.telefono)}', '${escapeParam(p.profesion)}', '${escapeParam(p.codigoMat)}')">Editar</button>
+                            <button class="btn-sm btn-edit" onclick="prepararEdicion('${id}', '${escapeParam(p.apellidoNombre)}', '${escapeParam(p.dni)}', '${escapeParam(p.telefono)}', '${escapeParam(p.profesion)}', '${escapeParam(p.codigoMat)}', '${escapeParam(p.linkDrive || '')}')">Editar</button>
                             <button class="btn-sm btn-delete" onclick="eliminarParticipante('${id}')">Eliminar</button>
                         </td>
                     `;
@@ -290,7 +309,7 @@
                 });
             } catch (e) {
                 console.error("Error al cargar participantes:", e);
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #dc2626;">Error al conectar con la base de datos.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #dc2626;">Error al conectar con la base de datos.</td></tr>';
             }
         }
 
@@ -302,9 +321,10 @@
             const telefono = document.getElementById('telefono').value.trim();
             const profesion = document.getElementById('profesion').value.trim();
             const codigoMat = document.getElementById('codigoMat').value.trim();
+            const linkDrive = document.getElementById('linkDrive').value.trim();
             const mensaje = document.getElementById('mensajeEstado');
 
-            const datosParticipante = { apellidoNombre, dni, telefono, profesion, codigoMat };
+            const datosParticipante = { apellidoNombre, dni, telefono, profesion, codigoMat, linkDrive };
 
             try {
                 const { collection, addDoc, doc, updateDoc } = window.firestoreOperations;
@@ -326,13 +346,14 @@
             }
         }
 
-        function prepararEdicion(id, apellidoNombre, dni, telefono, profesion, codigoMat) {
+        function prepararEdicion(id, apellidoNombre, dni, telefono, profesion, codigoMat, linkDrive) {
             document.getElementById('participanteId').value = id;
             document.getElementById('apellidoNombre').value = apellidoNombre;
             document.getElementById('dni').value = dni;
             document.getElementById('telefono').value = telefono;
             document.getElementById('profesion').value = profesion;
             document.getElementById('codigoMat').value = codigoMat;
+            document.getElementById('linkDrive').value = linkDrive;
 
             document.getElementById('btnGuardar').innerText = "Actualizar";
             document.getElementById('btnCancelar').style.display = "inline-block";
