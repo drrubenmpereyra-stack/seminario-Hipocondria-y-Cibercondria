@@ -1,4 +1,3 @@
-// Estructura de menús por rol
 const menusPorRol = {
     admin: [
         { id: 'participantes', label: 'Participantes', file: 'participantes.html' },
@@ -19,7 +18,6 @@ const menusPorRol = {
     ]
 };
 
-// Mapeo de vistas e iframes
 const contenidosPaginas = {
     'participantes': { isIframe: true, url: 'participantes.html' },
     'materiales': { isIframe: true, url: 'mat_bib.html' },
@@ -43,7 +41,7 @@ let participanteAutenticado = false;
 let participanteActualNombre = '';
 let participanteActualDrive = '';
 
-// Enlace de respaldo solicitado
+// Enlace por defecto proporcionado
 const FOTO_DEFAULT_DRIVE = "https://drive.google.com/file/d/1_ZF3FTDBH5E33hkWt_4dEWkAIcGe9S_q/view?usp=sharing";
 
 function cambiarRol(nuevoRol) {
@@ -94,7 +92,6 @@ function renderizarMenu() {
     });
 }
 
-// Pantalla Login Administrador
 function mostrarPantallaLoginAdmin(mensajeError = '') {
     const vista = document.getElementById('dynamicView');
     if (!vista) return;
@@ -131,7 +128,6 @@ function verificarLoginAdmin() {
     }
 }
 
-// Pantalla Login Participante
 function mostrarPantallaLoginParticipante(mensajeError = '') {
     const vista = document.getElementById('dynamicView');
     if (!vista) return;
@@ -185,7 +181,7 @@ async function verificarLoginParticipante() {
             if (apellidoRegistro.includes(apellidoIngresado) && codigoRegistro === codigoIngresado) {
                 participanteEncontrado = true;
                 participanteActualNombre = data.apellidoNombre;
-                participanteActualDrive = data.linkDrive && data.linkDrive.trim() !== "" ? data.linkDrive : FOTO_DEFAULT_DRIVE;
+                participanteActualDrive = (data.linkDrive && data.linkDrive.trim() !== "") ? data.linkDrive : FOTO_DEFAULT_DRIVE;
             }
         });
 
@@ -203,23 +199,30 @@ async function verificarLoginParticipante() {
     }
 }
 
-// Transformar link de Google Drive a formato de visualización incrustable/imagen
-function convertirLinkDrive(url) {
+// Conversor avanzado y robusto de enlaces Google Drive a imagen directa
+function convertirLinkDriveImagen(url) {
     if (!url) return '';
-    // Si es un link de archivo de drive, convertir a formato embed/preview o exportar imagen
-    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-        return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    let fileId = '';
+    const matchD = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (matchD && matchD[1]) {
+        fileId = matchD[1];
+    } else if (url.includes('id=')) {
+        const urlParams = new URLSearchParams(url.split('?')[1]);
+        if (urlParams.has('id')) {
+            fileId = urlParams.get('id');
+        }
+    }
+    if (fileId) {
+        return `https://drive.google.com/uc?export=view&id=${fileId}`;
     }
     return url;
 }
 
-// Animación vectorial de bienvenida corporativa/clínica
 function mostrarAnimacionBienvenida() {
     const vista = document.getElementById('dynamicView');
     if (!vista) return;
 
-    const fotoUrl = convertirLinkDrive(participanteActualDrive);
+    const fotoUrl = convertirLinkDriveImagen(participanteActualDrive);
 
     vista.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; animation: fadeInWelcome 1s ease-in-out;">
@@ -234,8 +237,8 @@ function mostrarAnimacionBienvenida() {
                     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
                 }
                 .welcome-avatar-container {
-                    width: 130px;
-                    height: 130px;
+                    width: 140px;
+                    height: 140px;
                     border-radius: 50%;
                     overflow: hidden;
                     border: 4px solid var(--accent-color);
@@ -255,7 +258,7 @@ function mostrarAnimacionBienvenida() {
             </style>
 
             <div class="welcome-avatar-container">
-                <img src="${fotoUrl}" alt="Foto Participante" onerror="this.src='https://placehold.co/130x130?text=Participante'">
+                <img src="${fotoUrl}" alt="Foto Participante" onerror="this.src='https://placehold.co/140x140?text=Participante'">
             </div>
 
             <h2 style="color: var(--primary-color); font-size: 1.8rem; margin-bottom: 10px; border: none;">¡Bienvenido/a al Seminario!</h2>
@@ -320,7 +323,6 @@ function cargarVista(idVista) {
     }
 }
 
-// Exponer funciones globales
 window.cambiarRol = cambiarRol;
 window.verificarLoginAdmin = verificarLoginAdmin;
 window.verificarLoginParticipante = verificarLoginParticipante;
