@@ -1,4 +1,3 @@
-// Estructura de menús por rol
 const menusPorRol = {
     admin: [
         { id: 'participantes', label: 'Participantes', file: 'participantes.html' },
@@ -40,9 +39,9 @@ let rolActual = 'admin';
 let adminAutenticado = false;
 let participanteAutenticado = false;
 let participanteActualNombre = '';
-let participanteActualDrive = '';
+let participanteActualFoto = '';
 
-const FOTO_DEFAULT_DRIVE = "https://drive.google.com/file/d/1_ZF3FTDBH5E33hkWt_4dEWkAIcGe9S_q/view?usp=sharing";
+const FOTO_DEFAULT = 'logotipo.jpg';
 
 function cambiarRol(nuevoRol) {
     rolActual = nuevoRol;
@@ -167,7 +166,6 @@ async function verificarLoginParticipante() {
     }
 
     try {
-        // Esperar brevemente si Firestore aún está cargando en la ventana principal
         let intentos = 0;
         while (!window.db && intentos < 10) {
             await new Promise(r => setTimeout(r, 200));
@@ -191,7 +189,7 @@ async function verificarLoginParticipante() {
             if (apellidoRegistro.includes(apellidoIngresado) && codigoRegistro === codigoIngresado) {
                 participanteEncontrado = true;
                 participanteActualNombre = data.apellidoNombre;
-                participanteActualDrive = (data.linkDrive && data.linkDrive.trim() !== "") ? data.linkDrive : FOTO_DEFAULT_DRIVE;
+                participanteActualFoto = (data.linkDrive && data.linkDrive.trim() !== "") ? data.linkDrive.trim() : FOTO_DEFAULT;
             }
         });
 
@@ -208,29 +206,9 @@ async function verificarLoginParticipante() {
     }
 }
 
-function convertirLinkDriveImagen(url) {
-    if (!url) return '';
-    let fileId = '';
-    const matchD = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (matchD && matchD[1]) {
-        fileId = matchD[1];
-    } else if (url.includes('id=')) {
-        const urlParams = new URLSearchParams(url.split('?')[1]);
-        if (urlParams.has('id')) {
-            fileId = urlParams.get('id');
-        }
-    }
-    if (fileId) {
-        return `https://drive.google.com/uc?export=view&id=${fileId}`;
-    }
-    return url;
-}
-
 function mostrarAnimacionBienvenida() {
     const vista = document.getElementById('dynamicView');
     if (!vista) return;
-
-    const fotoUrl = convertirLinkDriveImagen(participanteActualDrive);
 
     vista.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; text-align: center; animation: fadeInWelcome 1s ease-in-out;">
@@ -266,7 +244,7 @@ function mostrarAnimacionBienvenida() {
             </style>
 
             <div class="welcome-avatar-container">
-                <img src="${fotoUrl}" alt="Foto Participante" onerror="this.src='https://placehold.co/140x140?text=Participante'">
+                <img src="${participanteActualFoto}" alt="Foto Participante" onerror="this.src='https://placehold.co/140x140?text=Participante'">
             </div>
 
             <h2 style="color: var(--primary-color); font-size: 1.8rem; margin-bottom: 10px; border: none;">¡Bienvenido/a al Seminario!</h2>
@@ -315,7 +293,6 @@ function cargarVista(idVista) {
     }
 }
 
-// Exponer funciones globales
 window.cambiarRol = cambiarRol;
 window.verificarLoginAdmin = verificarLoginAdmin;
 window.verificarLoginParticipante = verificarLoginParticipante;
