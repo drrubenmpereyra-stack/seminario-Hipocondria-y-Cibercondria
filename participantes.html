@@ -90,6 +90,12 @@
             font-size: 0.9rem;
         }
 
+        .form-help {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
         .form-actions {
             grid-column: 1 / -1;
             display: flex;
@@ -231,8 +237,9 @@
             </div>
 
             <div class="form-group full-width">
-                <label for="linkDrive">Link Foto / Carpeta Google Drive:</label>
-                <input type="text" id="linkDrive" placeholder="https://drive.google.com/file/d/...">
+                <label for="linkDrive">Nombre del archivo de foto en el repositorio:</label>
+                <input type="text" id="linkDrive" placeholder="Ej. juan_perez.jpg">
+                <span class="form-help">Sube la foto a tu repositorio de GitHub y escribe aquí su nombre exacto con su extensión.</span>
             </div>
 
             <div class="form-actions">
@@ -265,16 +272,6 @@
     </div>
 
     <script>
-        // Función para transformar cualquier link de Drive en imagen visualizable directa
-        function convertirLinkDriveImagen(url) {
-            if (!url) return 'https://placehold.co/36x36?text=Foto';
-            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-                return `https://lh3.googleusercontent.com/d/${match[1]}`;
-            }
-            return url;
-        }
-
         async function cargarParticipantes() {
             const tbody = document.getElementById('tablaParticipantesBody');
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #64748b;">Cargando registros...</td></tr>';
@@ -297,11 +294,11 @@
                 querySnapshot.forEach((docSnap) => {
                     const p = docSnap.data();
                     const id = docSnap.id;
-                    const fotoSrc = convertirLinkDriveImagen(p.linkDrive);
+                    const fotoSrc = p.linkDrive ? p.linkDrive.trim() : 'logotipo.jpg';
                     
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><img src="${fotoSrc}" class="avatar-min" onerror="this.src='https://placehold.co/36x36?text=Foto'"></td>
+                        <td><img src="${escapeHtml(fotoSrc)}" class="avatar-min" onerror="this.src='https://placehold.co/36x36?text=Foto'"></td>
                         <td>${escapeHtml(p.apellidoNombre)}</td>
                         <td>${escapeHtml(p.dni)}</td>
                         <td>${escapeHtml(p.telefono)}</td>
