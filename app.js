@@ -1,33 +1,42 @@
-// Estructura de menús por rol
+// Estructura de menús por rol con sus respectivos archivos HTML mapeados
 const menusPorRol = {
     admin: [
-        { id: 'participantes', label: 'Participantes' },
-        { id: 'materiales', label: 'Materiales, biblioteca' },
-        { id: 'clase-en-vivo', label: 'Clase en vivo' },
-        { id: 'clase-grabada', label: 'Clase Grabada' },
-        { id: 'acreditacion', label: 'Trabajo para acreditación' },
-        { id: 'certificado', label: 'Certificado' },
-        { id: 'pagos', label: 'Pagos' }
+        { id: 'participantes', label: 'Participantes', file: 'participantes.html' },
+        { id: 'materiales', label: 'Materiales, biblioteca', file: 'mat_bib.html' },
+        { id: 'clase-en-vivo', label: 'Clase en vivo', file: 'clase_meet.html' },
+        { id: 'clase-grabada', label: 'Clase Grabada', file: 'clase_drive.html' },
+        { id: 'acreditacion', label: 'Trabajo para acreditación', file: 'acreditacion.html' },
+        { id: 'certificado', label: 'Certificado', file: 'certificado.html' },
+        { id: 'pagos', label: 'Pagos', file: 'pagos.html' }
     ],
     participante: [
-        { id: 'materiales', label: 'Materiales, biblioteca' },
-        { id: 'clase-en-vivo', label: 'Clase en vivo' },
-        { id: 'clase-grabada', label: 'Clase Grabada' },
-        { id: 'evaluacion', label: 'Trabajo Evaluación' },
-        { id: 'certificado', label: 'Certificado' },
-        { id: 'pagos', label: 'Pagos' }
+        { id: 'materiales', label: 'Materiales, biblioteca', file: 'est_materiales.html' },
+        { id: 'clase-en-vivo', label: 'Clase en vivo', file: 'est_meet.html' },
+        { id: 'clase-grabada', label: 'Clase Grabada', file: 'est_drive.html' },
+        { id: 'evaluacion', label: 'Trabajo de evaluación', file: 'est_acreditacion.html' },
+        { id: 'certificado', label: 'Certificado', file: 'est_cert.html' },
+        { id: 'pagos', label: 'Pagos', file: 'est_pagos.html' }
     ]
 };
 
+// Diccionario general con la asignación de iframes para cada vista
 const contenidosPaginas = {
-    'participantes': { titulo: 'Gestión de Participantes (Administrador)', descripcion: 'Panel de control para supervisión y seguimiento de inscriptos.' },
-    'materiales': { titulo: 'Materiales y Biblioteca Digital', descripcion: 'Repositorio bibliográfico institucional sobre nosografías contemporáneas.' },
-    'clase-en-vivo': { titulo: 'Transmisión de Clase en Vivo', descripcion: 'Enlace de acceso a videoconferencias sincrónicas.' },
-    'clase-grabada': { titulo: 'Archivos de Clases Grabadas', descripcion: 'Videoteca con el registro histórico de conferencias anteriores.' },
-    'acreditacion': { titulo: 'Trabajos para Acreditación', descripcion: 'Gestión y calificación de trabajos finales presentados.' },
-    'evaluacion': { titulo: 'Trabajo de Evaluación', descripcion: 'Espacio para la presentación y entrega de trabajos prácticos.' },
-    'certificado': { titulo: 'Emisión de Certificados', descripcion: 'Generación de certificado oficial de la Clínica de la Convergencia.' },
-    'pagos': { titulo: 'Estado de Pagos y Tesorería', descripcion: 'Control y registro financiero de la cursada.' }
+    // Nivel Administrador
+    'participantes': { isIframe: true, url: 'participantes.html' },
+    'materiales': { isIframe: true, url: 'mat_bib.html' },
+    'clase-en-vivo': { isIframe: true, url: 'clase_meet.html' },
+    'clase-grabada': { isIframe: true, url: 'clase_drive.html' },
+    'acreditacion': { isIframe: true, url: 'acreditacion.html' },
+    'certificado': { isIframe: true, url: 'certificado.html' },
+    'pagos': { isIframe: true, url: 'pagos.html' },
+
+    // Nivel Participante
+    'est_materiales': { isIframe: true, url: 'est_materiales.html' },
+    'est_clase-en-vivo': { isIframe: true, url: 'est_meet.html' },
+    'est_clase-grabada': { isIframe: true, url: 'est_drive.html' },
+    'evaluacion': { isIframe: true, url: 'est_acreditacion.html' },
+    'est_certificado': { isIframe: true, url: 'est_cert.html' },
+    'est_pagos': { isIframe: true, url: 'est_pagos.html' }
 };
 
 let rolActual = 'admin';
@@ -89,9 +98,8 @@ function mostrarPantallaLogin(mensajeError = '') {
             ${mensajeError ? `<div class="login-error">${mensajeError}</div>` : ''}
         </div>
     `;
-
-    // Vincular evento de clic de forma segura
-    document.getElementById('btnIngresarLogin').onclick = verificarLogin;
+    const btnIngresar = document.getElementById('btnIngresarLogin');
+    if (btnIngresar) btnIngresar.onclick = verificarLogin;
 }
 
 function verificarLogin() {
@@ -119,7 +127,7 @@ async function registrarAccesoFirestore(usuario) {
             });
         }
     } catch (e) {
-        console.error("Error al registrar en Firestore: ", e);
+        console.error("Error al registrar acceso:", e);
     }
 }
 
@@ -128,16 +136,31 @@ function cargarVista(idVista) {
         mostrarPantallaLogin();
         return;
     }
-    const c = contenidosPaginas[idVista] || { titulo: 'Sección', descripcion: 'En desarrollo.' };
+    
     const vista = document.getElementById('dynamicView');
     if (!vista) return;
+
+    // Buscar en el mapeo general o asociar el archivo correspondiente del menú activo
+    let configVista = contenidosPaginas[idVista];
     
-    vista.innerHTML = `
-        <h2>${c.titulo}</h2>
-        <p>${c.descripcion}</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-        <p style="font-size: 0.9rem; color: #64748b;">Seminario Intensivo: Hipocondría y Cibercondría: El Terror al Cuerpo Enfermo en la Era de la Información | Dr. y Mgter. Rubén M. Pereyra</p>
-    `;
+    if (!configVista) {
+        // Fallback dinámico buscando en el menú actual si el ID coincide con el archivo
+        const itemMenu = menusPorRol[rolActual].find(m => m.id === idVista);
+        if (itemMenu) {
+            configVista = { isIframe: true, url: itemMenu.file };
+        }
+    }
+
+    if (configVista && configVista.isIframe) {
+        vista.innerHTML = `
+            <iframe src="${configVista.url}" style="width: 100%; height: 720px; border: none; background: transparent;"></iframe>
+        `;
+    } else {
+        vista.innerHTML = `
+            <h2>Sección en desarrollo</h2>
+            <p>Contenido disponible próximamente.</p>
+        `;
+    }
 }
 
 // Exponer funciones globales necesarias para eventos nativos
