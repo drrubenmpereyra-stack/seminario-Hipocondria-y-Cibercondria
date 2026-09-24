@@ -22,7 +22,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Exponer la base de datos y funciones a la ventana para app.js
+        // Exponer base de datos globalmente
         window.db = db;
         window.firebaseFirestore = { collection, addDoc, getDocs, doc, setDoc };
     </script>
@@ -256,7 +256,7 @@
 
     <div class="role-switcher-bar">
         <span>Seleccionar Nivel de Usuario:</span>
-        <select id="roleSelector" onchange="cambiarRol(this.value)">
+        <select id="roleSelector">
             <option value="admin">A- Nivel Administrador</option>
             <option value="participante">B- Nivel Participante</option>
         </select>
